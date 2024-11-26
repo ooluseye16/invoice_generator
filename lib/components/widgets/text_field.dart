@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 class CustomTextField extends StatefulWidget {
   const CustomTextField({
     super.key,
-    required this.controller,
+    this.controller,
     required this.label,
+    this.onChanged,
   });
 
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final String label;
-
+  final Function(String)? onChanged;
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
 }
@@ -20,12 +21,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
   Widget build(BuildContext context) {
     return TextField(
       controller: widget.controller,
+      onChanged: widget.onChanged,
       decoration: InputDecoration(
         hintText: widget.label,
-        hintStyle: Theme.of(context)
-            .textTheme
-            .bodyLarge
-            ?.copyWith(color: Colors.grey),
+        hintStyle:
+            Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
         border: InputBorder.none,
         // filled: true,
         // fillColor: Colors.black12,
@@ -44,8 +44,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
 }
 
 class PhoneNumberTextField extends StatefulWidget {
-  const PhoneNumberTextField({super.key, required this.controller});
-  final TextEditingController controller;
+  const PhoneNumberTextField(
+      {super.key,  this.controller, this.onChanged});
+  final TextEditingController? controller;
+  final Function(String)? onChanged;
 
   @override
   State<PhoneNumberTextField> createState() => _PhoneNumberTextFieldState();
@@ -57,6 +59,7 @@ class _PhoneNumberTextFieldState extends State<PhoneNumberTextField> {
     return TextField(
       controller: widget.controller,
       keyboardType: TextInputType.phone,
+      onChanged: widget.onChanged,
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
       ],
@@ -65,10 +68,8 @@ class _PhoneNumberTextFieldState extends State<PhoneNumberTextField> {
       },
       decoration: InputDecoration(
         hintText: '9012345678',
-        hintStyle: Theme.of(context)
-            .textTheme
-            .bodyLarge
-            ?.copyWith(color: Colors.grey),
+        hintStyle:
+            Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
         prefixIcon: UnconstrainedBox(
           child: Container(
             margin: const EdgeInsets.only(right: 8, left: 8),
@@ -91,6 +92,46 @@ class _PhoneNumberTextFieldState extends State<PhoneNumberTextField> {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+    );
+  }
+}
+
+class NumberTextField extends StatefulWidget {
+  const NumberTextField(
+      {super.key, this.controller, required this.hintText, this.onChanged});
+  final TextEditingController? controller;
+  final String hintText;
+  final Function(String)? onChanged;
+
+  @override
+  State<NumberTextField> createState() => _NumberTextFieldState();
+}
+
+class _NumberTextFieldState extends State<NumberTextField> {
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: widget.controller,
+      keyboardType: TextInputType.number,
+      onChanged: widget.onChanged,
+      decoration: InputDecoration(
+        hintText: widget.hintText,
+        hintStyle:
+            Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+        border: InputBorder.none,
+        isDense: true,
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.black12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.black12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+      ],
     );
   }
 }

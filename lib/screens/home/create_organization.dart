@@ -1,24 +1,27 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:invoice_generator/components/widgets/button.dart';
 import 'package:invoice_generator/components/widgets/text_field.dart';
 import 'package:invoice_generator/data/models/form_field.dart';
 import 'package:invoice_generator/data/models/organization.dart';
 import 'package:invoice_generator/screens/home/add_field_dialog.dart';
-import 'package:invoice_generator/screens/home/form_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoice_generator/providers/organization_provider.dart';
+import 'package:uuid/uuid.dart';
 
-class CreateOrganizationScreen extends StatefulWidget {
+class CreateOrganizationScreen extends ConsumerStatefulWidget {
   static const routeName = '/create-organization';
   const CreateOrganizationScreen({super.key});
 
   @override
-  State<CreateOrganizationScreen> createState() =>
+  ConsumerState<CreateOrganizationScreen> createState() =>
       _CreateOrganizationScreenState();
 }
 
-class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
+class _CreateOrganizationScreenState extends ConsumerState<CreateOrganizationScreen> {
   String? headerImagePath;
   List<InvoiceFormField> fields = [];
   final TextEditingController _organizationNameController =
@@ -31,7 +34,7 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -56,158 +59,169 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-
-              Text('Organization Logo',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              // Header Image Section
-              GestureDetector(
-                onTap: _pickHeaderImage,
-                child: Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: headerImagePath != null
-                      ? Image.file(File(headerImagePath!), fit: BoxFit.cover)
-                      : const Center(
-                          child: Text('Tap to add logo'),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Organization Name',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: _organizationNameController,
-                label: 'Enter organization name',
-              ),
-              const SizedBox(height: 16),
-              Text('Organization Phone Number',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              PhoneNumberTextField(
-                controller: _organizationPhoneNumberController,
-              ),
-
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  onTap: _addField,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Add Field',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              )),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.add,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Fields List
-              if (fields.isNotEmpty) ...[
-                Text('Fields', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 16),
-              ],
               Expanded(
-                child: ReorderableListView.builder(
-                  itemCount: fields.length,
-                  proxyDecorator: (child, index, animation) => Container(
-                    key: ValueKey(fields[index]),
-                    child: child,
-                  ),
-                  onReorder: (oldIndex, newIndex) {
-                    setState(() {
-                      if (newIndex > oldIndex) {
-                        newIndex -= 1;
-                      }
-                      final item = fields.removeAt(oldIndex);
-                      fields.insert(newIndex, item);
-                    });
-                  },
-                  itemBuilder: (context, index) => Padding(
-                    key: ValueKey(fields[index]),
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Dismissible(
-                      key: ValueKey(fields[index]),
-                      background: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 16),
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.red,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Organization Logo',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 16),
+                      // Header Image Section
+                      GestureDetector(
+                        onTap: _pickHeaderImage,
+                        child: Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: headerImagePath != null
+                              ? Image.file(File(headerImagePath!),
+                                  fit: BoxFit.cover)
+                              : const Center(
+                                  child: Text('Tap to add logo'),
+                                ),
                         ),
                       ),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (direction) => _removeField(index),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
+                      const SizedBox(height: 16),
+                      Text('Organization Name',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: _organizationNameController,
+                        label: 'Enter organization name',
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Organization Phone Number',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      PhoneNumberTextField(
+                        controller: _organizationPhoneNumberController,
+                      ),
+
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: InkWell(
+                          onTap: _addField,
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      fields[index].name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      fields[index].type,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Colors.grey.shade600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
+                              Text('Add Field',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      )),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.add,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              Icon(Icons.drag_handle,
-                                  color: Colors.grey.shade600),
                             ],
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      // Fields List
+                      if (fields.isNotEmpty) ...[
+                        Text('Fields',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 16),
+                      ],
+                      ReorderableListView.builder(
+                        shrinkWrap: true,
+                        itemCount: fields.length,
+                        proxyDecorator: (child, index, animation) => Container(
+                          key: ValueKey(fields[index]),
+                          child: child,
+                        ),
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) {
+                              newIndex -= 1;
+                            }
+                            final item = fields.removeAt(oldIndex);
+                            fields.insert(newIndex, item);
+                          });
+                        },
+                        itemBuilder: (context, index) => Padding(
+                          key: ValueKey(fields[index]),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Dismissible(
+                            key: ValueKey(fields[index]),
+                            background: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 16),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.red,
+                              ),
+                            ),
+                            direction: DismissDirection.endToStart,
+                            onDismissed: (direction) => _removeField(index),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            fields[index].name,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            fields[index].type.name.toUpperCase(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.drag_handle,
+                                        color: Colors.grey.shade600),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Create Form Button
+                    ],
                   ),
                 ),
               ),
-
-              // Create Form Button
               DefaultButton(
                 onTap: fields.isNotEmpty ? _createOrganization : null,
                 text: 'Create Organization',
               ),
-              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -216,7 +230,6 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
   }
 
   Future<void> _pickHeaderImage() async {
-    // TODO: Implement image picker
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
@@ -246,15 +259,20 @@ class _CreateOrganizationScreenState extends State<CreateOrganizationScreen> {
     });
   }
 
-  void _createOrganization() {
-    // TODO: Implement organization creation  
+  void _createOrganization() async {
     final organization = Organization(
+      id: const Uuid().v4(),
       name: _organizationNameController.text,
       phoneNumber: _organizationPhoneNumberController.text,
       fields: fields,
+      logoPath: headerImagePath,
     );
-    // TODO: Save organization to database
 
-    
+    // Use the provider to add the organization
+    await ref.read(organizationsProvider.notifier).addOrganization(organization);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }

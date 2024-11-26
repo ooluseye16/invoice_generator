@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:invoice_generator/components/widgets/button.dart';
 import 'package:invoice_generator/components/widgets/text_field.dart';
+import 'package:invoice_generator/data/models/form_field.dart';
 
 class AddFieldDialog extends StatefulWidget {
-  final Function(String name, String type) onAdd;
+  final Function(String name, FormFieldType type) onAdd;
 
   const AddFieldDialog({super.key, required this.onAdd});
 
@@ -13,9 +14,15 @@ class AddFieldDialog extends StatefulWidget {
 
 class _AddFieldDialogState extends State<AddFieldDialog> {
   final _nameController = TextEditingController();
-  String _selectedType = 'Text';
+  FormFieldType _selectedType = FormFieldType.text;
 
-  final _fieldTypes = ['Text', 'Number', 'Date', 'Email', 'Phone'];
+  final _fieldTypes = [
+    FormFieldType.text,
+    FormFieldType.number,
+    FormFieldType.phone,
+    FormFieldType.date,
+    FormFieldType.email,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +55,7 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<FormFieldType>(
               decoration: InputDecoration(
                 hintText: 'Field Type',
                 border: InputBorder.none,
@@ -68,7 +75,7 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
               items: _fieldTypes.map((type) {
                 return DropdownMenuItem(
                   value: type,
-                  child: Text(type),
+                  child: Text(type.name.toUpperCase()),
                 );
               }).toList(),
               onChanged: (value) {

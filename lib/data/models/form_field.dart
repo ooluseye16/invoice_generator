@@ -1,6 +1,31 @@
+import 'package:hive/hive.dart';
+
+part 'form_field.g.dart';
+
+@HiveType(typeId: 1)
 class InvoiceFormField {
+  @HiveField(0)
   final String name;
-  final String type;
-  
-  InvoiceFormField({required this.name, required this.type});
+
+  @HiveField(1)
+  final FormFieldType type;
+
+  InvoiceFormField({
+    required this.name,
+    required this.type,
+  });
+}
+
+@HiveType(typeId: 2)
+enum FormFieldType {
+  @HiveField(0)
+  text,
+  @HiveField(1)
+  number,
+  @HiveField(2)
+  phone,
+  @HiveField(3)
+  date,
+  @HiveField(4)
+  email,
 }
