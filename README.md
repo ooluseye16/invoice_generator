@@ -1,16 +1,24 @@
-# invoice_generator
+# Invoice Generator
 
-A new Flutter project.
+A Flutter application for generating professional invoices. This app allows organizations to create customized invoice forms and generate PDF invoices.
+
+## Features
+
+- Create and manage multiple organizations
+- Customize invoice fields per organization
+- Organization logo support
+- Generate professional PDF invoices
+- Easy form filling interface
+- Local Database support for Organizations
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK
+- Dart SDK
+- Android Studio / VS Code
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Clone the repository
