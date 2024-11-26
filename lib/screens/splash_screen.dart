@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../screens/home/home_screen.dart';
+import 'package:invoice_generator/screens/organization_screen.dart';
 
 class SplashScreen extends StatefulWidget {
+  static const routeName = '/splash';
   const SplashScreen({super.key});
 
   @override
@@ -14,8 +14,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+      Navigator.pushNamedAndRemoveUntil(
+          context, OrganizationScreen.routeName, (route) => false);
     });
   }
 

@@ -18,7 +18,7 @@ class DefaultButton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(24)),
+            borderRadius: BorderRadius.circular(16)),
         child: Center(
           child: Text(text,
               style: Theme.of(context)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoice_generator/components/widgets/button.dart';
+import 'package:invoice_generator/components/widgets/text_field.dart';
 
 class AddFieldDialog extends StatefulWidget {
   final Function(String name, String type) onAdd;
@@ -38,7 +39,7 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
             ),
             const SizedBox(height: 8),
             CustomTextField(
-              nameController: _nameController,
+              controller: _nameController,
               label: 'Field Name',
             ),
             const SizedBox(height: 16),
@@ -94,43 +95,5 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
-  }
-}
-
-class CustomTextField extends StatefulWidget {
-  const CustomTextField({
-    super.key,
-    required this.nameController,
-    required this.label,
-  });
-
-  final TextEditingController nameController;
-  final String label;
-
-  @override
-  State<CustomTextField> createState() => _CustomTextFieldState();
-}
-
-class _CustomTextFieldState extends State<CustomTextField> {
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: widget.nameController,
-      decoration: InputDecoration(
-        hintText: widget.label,
-        border: InputBorder.none,
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceVariant,
-        isDense: true,
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(24),
-        ),
-      ),
-    );
   }
 }

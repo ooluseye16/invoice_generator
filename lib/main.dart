@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoice_generator/components/routes.dart';
 
 import 'screens/splash_screen.dart';
 
@@ -12,7 +13,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: SplashScreen(),
+      onGenerateRoute: RouteGenerator.generateroute,
+      initialRoute: SplashScreen.routeName,
     );
   }
 }
