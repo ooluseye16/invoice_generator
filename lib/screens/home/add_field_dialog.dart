@@ -22,6 +22,8 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
     FormFieldType.phone,
     FormFieldType.date,
     FormFieldType.email,
+    FormFieldType.listOfGoods,
+    FormFieldType.price,
   ];
 
   @override

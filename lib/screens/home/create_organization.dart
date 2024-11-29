@@ -1,15 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:invoice_generator/components/widgets/button.dart';
 import 'package:invoice_generator/components/widgets/text_field.dart';
 import 'package:invoice_generator/data/models/form_field.dart';
 import 'package:invoice_generator/data/models/organization.dart';
-import 'package:invoice_generator/screens/home/add_field_dialog.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoice_generator/providers/organization_provider.dart';
+import 'package:invoice_generator/screens/home/add_field_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateOrganizationScreen extends ConsumerStatefulWidget {
@@ -21,7 +20,8 @@ class CreateOrganizationScreen extends ConsumerStatefulWidget {
       _CreateOrganizationScreenState();
 }
 
-class _CreateOrganizationScreenState extends ConsumerState<CreateOrganizationScreen> {
+class _CreateOrganizationScreenState
+    extends ConsumerState<CreateOrganizationScreen> {
   String? headerImagePath;
   List<InvoiceFormField> fields = [];
   final TextEditingController _organizationNameController =
@@ -192,7 +192,10 @@ class _CreateOrganizationScreenState extends ConsumerState<CreateOrganizationScr
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            fields[index].type.name.toUpperCase(),
+                                            fields[index]
+                                                .type
+                                                .name
+                                                .toUpperCase(),
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium
@@ -269,7 +272,9 @@ class _CreateOrganizationScreenState extends ConsumerState<CreateOrganizationScr
     );
 
     // Use the provider to add the organization
-    await ref.read(organizationsProvider.notifier).addOrganization(organization);
+    await ref
+        .read(organizationsProvider.notifier)
+        .addOrganization(organization);
 
     if (mounted) {
       Navigator.of(context).pop();

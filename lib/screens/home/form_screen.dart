@@ -1,22 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:invoice_generator/components/widgets/button.dart';
 import 'package:invoice_generator/components/widgets/text_field.dart';
 import 'package:invoice_generator/data/models/form_field.dart';
+import 'package:invoice_generator/data/models/goods.dart';
 import 'package:invoice_generator/data/models/organization.dart';
+import 'package:invoice_generator/utils/number_to_word.dart';
 
-class OrganizationFormScreen extends ConsumerWidget {
+class OrganizationFormScreen extends ConsumerStatefulWidget {
   const OrganizationFormScreen({super.key, required this.organization});
   final Organization organization;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrganizationFormScreen> createState() =>
+      _OrganizationFormScreenState();
+}
+
+class _OrganizationFormScreenState
+    extends ConsumerState<OrganizationFormScreen> {
+  final Map<InvoiceFormField, List<Goods>> goodsLists = {};
+  final Map<InvoiceFormField, dynamic> fieldValues = {};
+  String amountInWords = '';
+
+  @override
+  void initState() {
+    super.initState();
+    for (var field in widget.organization.fields) {
+      if (field.type == FormFieldType.listOfGoods) {
+        goodsLists[field] = [];
+      } else {
+        fieldValues[field] = '';
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.info),
               SizedBox(width: 8),
@@ -28,56 +55,227 @@ class OrganizationFormScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: organization.fields.map((field) {
-                switch (field.type) {
-                  case FormFieldType.text:
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(field.name),
-                        const SizedBox(height: 8),
-                        CustomTextField(
-                          label: field.name,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  case FormFieldType.number:
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(field.name),
-                        const SizedBox(height: 8),
-                        NumberTextField(
-                          hintText: field.name,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  case FormFieldType.phone:
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(field.name),
-                        const SizedBox(height: 8),
-                        const PhoneNumberTextField(),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  default:
-                    return const SizedBox.shrink(); // Handle other field types
-                }
-              }).toList(),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: widget.organization.fields.map((field) {
+                  switch (field.type) {
+                    case FormFieldType.text:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: field.name,
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = value;
+                              });
+                            },
+                            //   controller: TextEditingController(text: fieldValues[field]),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.number:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          NumberTextField(
+                            hintText: field.name,
+                            // controller: TextEditingController(text: fieldValues[field]),
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.phone:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          PhoneNumberTextField(
+                            //  controller:
+                            //     TextEditingController(text: fieldValues[field]),
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = "+234$value";
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.listOfGoods:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Text(field.name),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    builder: (context) => AddGoods(
+                                      onAdd: (goods) {
+                                        setState(() {
+                                          goodsLists[field]!.add(goods);
+                                        });
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: const Text("Add Item"),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: goodsLists[field]!.length,
+                            itemBuilder: (context, index) {
+                              return GoodsCard(
+                                goods: goodsLists[field]![index],
+                                onDelete: () {
+                                  setState(() {
+                                    goodsLists[field]!.removeAt(index);
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                          if (goodsLists[field]!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'Total cost of Goods: ₦${NumberFormat('#,###').format(goodsLists[field]!.fold(0.0, (sum, goods) => sum + (goods.price * goods.quantity)))}',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.date:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          DateTextField(
+                            hintText: field.name,
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.email:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          EmailTextField(
+                            hintText: field.name,
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    case FormFieldType.price:
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(field.name),
+                          const SizedBox(height: 8),
+                          PriceTextField(
+                            hintText: field.name,
+                            // controller: TextEditingController(text: fieldValues[field]),
+                            onChanged: (value) {
+                              setState(() {
+                                fieldValues[field] = value;
+                                final amount = double.tryParse(value) ?? 0;
+                                amountInWords = NumberToWord().convert(amount);
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: 'Amount in words',
+                            controller:
+                                TextEditingController(text: amountInWords),
+                            readOnly: true,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    default:
+                      return const SizedBox
+                          .shrink(); // Handle other field types
+                  }
+                }).toList(),
+              ),
             ),
           ),
           const SizedBox(height: 16),
           DefaultButton(
-            onTap: () {},
+            onTap: () {
+              // Create a map of all form data
+              final formData = {
+                'fields': fieldValues.map(
+                  (field, value) => MapEntry(field.name, value),
+                ),
+                'goods': goodsLists.map(
+                  (field, list) => MapEntry(
+                    field.name,
+                    list
+                        .map(
+                          (g) => g.toJson(),
+                        )
+                        .toList(),
+                  ),
+                ),
+                'amountInWords': amountInWords,
+                'total_price_goods': goodsLists.values.fold(
+                  0.0,
+                  (sum, list) =>
+                      sum +
+                      list.fold(
+                        0.0,
+                        (sum, goods) => sum + (goods.price * goods.quantity),
+                      ),
+                ),
+              };
+
+              
+            },
             text: "Generate Invoice",
           ),
         ],
@@ -86,19 +284,193 @@ class OrganizationFormScreen extends ConsumerWidget {
   }
 }
 
-IconData _getFieldIcon(String fieldType) {
-  switch (fieldType) {
-    case 'Text':
-      return Icons.text_fields;
-    case 'Number':
-      return Icons.numbers;
-    case 'Email':
-      return Icons.email;
-    case 'Phone':
-      return Icons.phone;
-    case 'Date':
-      return Icons.calendar_today;
-    default:
-      return Icons.input;
+class GoodsCard extends StatelessWidget {
+  const GoodsCard({
+    super.key,
+    required this.goods,
+    required this.onDelete,
+  });
+
+  final Goods goods;
+  final Function() onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                                text: 'Description: ',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500)),
+                            TextSpan(text: goods.description),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                                text: 'Quantity: ',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500)),
+                            TextSpan(text: '${goods.quantity}'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                                text: 'Price per Unit: ',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500)),
+                            TextSpan(text: '₦ ${goods.price}'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () {
+                    onDelete();
+                    // setState(() {
+                    //   goodsList.removeAt(index);
+                    // });
+                  },
+                ),
+              ],
+            )),
+      ),
+    );
   }
 }
+
+class AddGoods extends StatefulWidget {
+  const AddGoods({
+    super.key,
+    required this.onAdd,
+  });
+  final Function(Goods) onAdd;
+
+  @override
+  State<AddGoods> createState() => _AddGoodsState();
+}
+
+class _AddGoodsState extends State<AddGoods> {
+  final TextEditingController descriptionController = TextEditingController();
+
+  final TextEditingController quantityController = TextEditingController();
+
+  final TextEditingController priceController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Text(
+              "Add Item",
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text("Description",
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          CustomTextField(
+            controller: descriptionController,
+            label: 'Description',
+          ),
+          const SizedBox(height: 16),
+          Text("Quantity",
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          NumberTextField(
+            controller: quantityController,
+            hintText: 'Quantity',
+          ),
+          const SizedBox(height: 16),
+          Text("Price per unit",
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          NumberTextField(
+            controller: priceController,
+            hintText: 'Price',
+          ),
+          const SizedBox(height: 16),
+          DefaultButton(
+            onTap: () {
+              widget.onAdd(Goods(
+                description: descriptionController.text,
+                quantity: int.parse(quantityController.text),
+                price: double.parse(priceController.text),
+              ));
+              Navigator.pop(context);
+            },
+            text: "Add Item",
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+// IconData _getFieldIcon(String fieldType) {
+//   switch (fieldType) {
+//     case 'Text':
+//       return Icons.text_fields;
+//     case 'Number':
+//       return Icons.numbers;
+//     case 'Email':
+//       return Icons.email;
+//     case 'Phone':
+//       return Icons.phone;
+//     case 'Date':
+//       return Icons.calendar_today;
+//     default:
+//       return Icons.input;
+//   }
+//}

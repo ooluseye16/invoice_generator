@@ -60,6 +60,10 @@ class FormFieldTypeAdapter extends TypeAdapter<FormFieldType> {
         return FormFieldType.date;
       case 4:
         return FormFieldType.email;
+      case 5:
+        return FormFieldType.listOfGoods;
+      case 6:
+        return FormFieldType.price;
       default:
         return FormFieldType.text;
     }
@@ -82,6 +86,12 @@ class FormFieldTypeAdapter extends TypeAdapter<FormFieldType> {
         break;
       case FormFieldType.email:
         writer.writeByte(4);
+        break;
+      case FormFieldType.listOfGoods:
+        writer.writeByte(5);
+        break;
+      case FormFieldType.price:
+        writer.writeByte(6);
         break;
     }
   }

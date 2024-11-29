@@ -28,4 +28,8 @@ enum FormFieldType {
   date,
   @HiveField(4)
   email,
+  @HiveField(5)
+  listOfGoods,
+  @HiveField(6)
+  price
 }
