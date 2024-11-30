@@ -32,15 +32,26 @@ class _OrganizationFormScreenState
   String amountInWords = '';
 
   @override
-  void initState() {
-    super.initState();
-    for (var field in widget.organization.fields) {
-      if (field.type == FormFieldType.listOfGoods) {
-        goodsLists[field] = [];
-      } else {
-        fieldValues[field] = '';
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    //run once
+    if (goodsLists.isEmpty && fieldValues.isEmpty) {
+      for (var field in widget.organization.fields) {
+        if (field.type == FormFieldType.listOfGoods) {
+          goodsLists[field] = [];
+        } else {
+          fieldValues[field] = '';
+        }
       }
     }
+  }
+
+  bool isFormValid = false;
+
+  void checkFormValidity() {
+    isFormValid =
+        widget.organization.fields.every((field) => fieldValues[field] != '');
+    setState(() {});
   }
 
   @override
@@ -81,6 +92,7 @@ class _OrganizationFormScreenState
                               setState(() {
                                 fieldValues[field] = value;
                               });
+                              checkFormValidity();
                             },
                             //   controller: TextEditingController(text: fieldValues[field]),
                           ),
@@ -101,6 +113,7 @@ class _OrganizationFormScreenState
                               setState(() {
                                 fieldValues[field] = value;
                               });
+                              checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 16),
@@ -120,6 +133,7 @@ class _OrganizationFormScreenState
                               setState(() {
                                 fieldValues[field] = "+234$value";
                               });
+                              checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 16),
@@ -144,6 +158,7 @@ class _OrganizationFormScreenState
                                         setState(() {
                                           goodsLists[field]?.add(goods);
                                         });
+                                        checkFormValidity();
                                       },
                                     ),
                                   );
@@ -163,6 +178,7 @@ class _OrganizationFormScreenState
                                   setState(() {
                                     goodsLists[field]!.removeAt(index);
                                   });
+                                  checkFormValidity();
                                 },
                               );
                             },
@@ -193,6 +209,7 @@ class _OrganizationFormScreenState
                               setState(() {
                                 fieldValues[field] = value;
                               });
+                              checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 16),
@@ -211,6 +228,7 @@ class _OrganizationFormScreenState
                               setState(() {
                                 fieldValues[field] = value;
                               });
+                              checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 16),
@@ -232,6 +250,7 @@ class _OrganizationFormScreenState
                                 final amount = double.tryParse(value) ?? 0;
                                 amountInWords = NumberToWord().convert(amount);
                               });
+                              checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 8),
@@ -254,7 +273,9 @@ class _OrganizationFormScreenState
           ),
           const SizedBox(height: 16),
           DefaultButton(
+            isActive: isFormValid,
             onTap: () async {
+              if (!isFormValid) return;
               // Create a map of all form data
               final formData = {
                 'fields': fieldValues.map(
@@ -309,6 +330,13 @@ class _OrganizationFormScreenState
     final font = await PdfGoogleFonts.nunitoRegular();
     final boldFont = await PdfGoogleFonts.nunitoBold();
 
+    final fields = Map<String, dynamic>.from(formData['fields'])
+        .entries
+        .where((e) => !e.key.toLowerCase().contains('total amount paid'))
+        .toList();
+
+    final totalAmount = formData['fields']['Total Amount Paid'];
+
     pdf.addPage(
       pw.Page(
         theme: pw.ThemeData.withFont(
@@ -353,20 +381,85 @@ class _OrganizationFormScreenState
             ),
             pw.SizedBox(height: 20),
             // Organization Details
-            ...fieldValues.entries.map((entry) => pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      '${entry.key.name}:',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 16,
+            pw.Wrap(
+              alignment: pw.WrapAlignment.spaceBetween,
+              spacing: 30,
+              runSpacing: 20,
+              children: List.generate(
+                (fields.length / 2).ceil(),
+                (index) {
+                  final start = index * 2;
+                  final entries = fields.toList();
+                  return pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            '${entries[start].key}:',
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          pw.Text(
+                              entries[start].value.toString().toUpperCase()),
+                          pw.SizedBox(height: 10),
+                        ],
                       ),
-                    ),
-                    pw.Text(entry.value.toString().toUpperCase()),
-                    pw.SizedBox(height: 10),
-                  ],
-                )),
+                      if (start + 1 < entries.length)
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.end,
+                          children: [
+                            pw.Text(
+                              '${entries[start + 1].key}:',
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            pw.Text(entries[start + 1]
+                                .value
+                                .toString()
+                                .toUpperCase()),
+                            pw.SizedBox(height: 10),
+                          ],
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            pw.RichText(
+              text: pw.TextSpan(
+                children: [
+                  const pw.TextSpan(
+                    text: 'Total Amount Paid: ',
+                  ),
+                  pw.TextSpan(
+                    text:
+                        NumberFormat('#,###').format(double.parse(totalAmount)),
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 4),
+            pw.RichText(
+              text: pw.TextSpan(
+                children: [
+                  const pw.TextSpan(
+                    text: 'Amount in Words: ',
+                  ),
+                  pw.TextSpan(
+                    text: amountInWords,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
 
             pw.SizedBox(height: 20),
 
@@ -419,22 +512,6 @@ class _OrganizationFormScreenState
                     ),
                   ],
                 )),
-
-            pw.SizedBox(height: 20),
-
-            pw.RichText(
-              text: pw.TextSpan(
-                children: [
-                  const pw.TextSpan(
-                    text: 'Amount in Words: ',
-                  ),
-                  pw.TextSpan(
-                    text: amountInWords,
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
 
             //add signature
             pw.SizedBox(height: 60),

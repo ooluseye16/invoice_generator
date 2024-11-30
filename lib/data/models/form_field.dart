@@ -10,9 +10,13 @@ class InvoiceFormField {
   @HiveField(1)
   final FormFieldType type;
 
+  @HiveField(2)
+  final bool isRequired;
+
   InvoiceFormField({
     required this.name,
     required this.type,
+    this.isRequired = false,
   });
 }
 

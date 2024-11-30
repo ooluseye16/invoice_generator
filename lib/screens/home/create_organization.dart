@@ -30,8 +30,38 @@ class _CreateOrganizationScreenState
       TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _organizationNameController.addListener(checkFormValidity);
+    _organizationPhoneNumberController.addListener(checkFormValidity);
+    // Initialize with required fields
+    fields = [
+      InvoiceFormField(
+          name: 'Customer Name', type: FormFieldType.text, isRequired: true),
+      InvoiceFormField(
+          name: 'Date Issued', type: FormFieldType.date, isRequired: true),
+      InvoiceFormField(
+          name: 'Total Amount Paid', type: FormFieldType.price, isRequired: true),
+    ];
+  }
+
+  bool isButtonActive = false;
+
+  checkFormValidity() {
+    bool isActive = _organizationNameController.text.isNotEmpty &&
+        _organizationPhoneNumberController.text.isNotEmpty &&
+        fields.isNotEmpty;
+    setState(() {
+      isButtonActive = isActive;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -168,12 +198,21 @@ class _CreateOrganizationScreenState
                                 color: Colors.red,
                               ),
                             ),
-                            direction: DismissDirection.endToStart,
+                            direction: fields[index].isRequired
+                                ? DismissDirection.none
+                                : DismissDirection.endToStart,
                             onDismissed: (direction) => _removeField(index),
                             child: Container(
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(
+                                  color: fields[index].isRequired
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade300,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
+                                color: fields[index].isRequired
+                                    ? Colors.grey.shade50
+                                    : null,
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
@@ -184,11 +223,29 @@ class _CreateOrganizationScreenState
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            fields[index].name,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium,
+                                          Row(
+                                            children: [
+                                              Text(
+                                                fields[index].name,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium,
+                                              ),
+                                              if (fields[index].isRequired) ...[
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '(Required)',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .primary,
+                                                      ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
@@ -222,7 +279,8 @@ class _CreateOrganizationScreenState
                 ),
               ),
               DefaultButton(
-                onTap: fields.isNotEmpty ? _createOrganization : null,
+                isActive: isButtonActive,
+                onTap: _createOrganization,
                 text: 'Create Organization',
               ),
             ],
@@ -261,8 +319,28 @@ class _CreateOrganizationScreenState
       fields.removeAt(index);
     });
   }
-
   void _createOrganization() async {
+    // Show confirmation dialog
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm'),
+        content: const Text('Are you done adding all necessary fields? You won\'t be able to modify them later.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No, go back'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes, continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldProceed != true) return;
+
     final organization = Organization(
       id: const Uuid().v4(),
       name: _organizationNameController.text,

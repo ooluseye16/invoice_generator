@@ -72,13 +72,13 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
+                                color: Theme.of(context).colorScheme.primary,
                                 image: org.logoPath != null
-                                    ?  DecorationImage(
+                                    ? DecorationImage(
                                         image: FileImage(File(org.logoPath!)),
-                                          fit: BoxFit.cover,
-                                        )
+                                        fit: BoxFit.cover,
+                                      )
                                     : null,
-                                color: Theme.of(context).colorScheme.surface,
                               ),
                               width: 40,
                               height: 40,
@@ -116,6 +116,7 @@ class AppDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final organizationsData = ref.watch(organizationsProvider);
+    final currentOrgId = ref.watch(currentOrganizationIdProvider);
     return organizationsData.when(
       loading: () => const SizedBox.shrink(),
       error: (error, stack) => Text('Error: $error'),
@@ -139,56 +140,111 @@ class AppDrawer extends ConsumerWidget {
                     itemCount: organizations.length,
                     itemBuilder: (context, index) {
                       final org = organizations[index];
-                      // final isSelected = org.id == currentOrgId;
+                      final isSelected = currentOrgId != null
+                          ? org.id == currentOrgId
+                          : index == 0;
 
                       return InkWell(
                         onTap: () {
                           ref
                               .read(currentOrganizationIdProvider.notifier)
                               .setCurrentOrganization(org.id);
+                          ref
+                              .read(currentOrganizationIdProvider.notifier)
+                              .clear();
                           Navigator.pop(context);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  image: org.logoPath != null
-                                      ? DecorationImage(
-                                          image: FileImage(File(org.logoPath!)),
-                                          fit: BoxFit.cover,
-                                          onError: (_, __) {},
-                                        )
-                                      : null,
-                                  color: Theme.of(context).colorScheme.primary,
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: isSelected
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer
+                                      .withOpacity(0.5)
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    image: org.logoPath != null
+                                        ? DecorationImage(
+                                            image:
+                                                FileImage(File(org.logoPath!)),
+                                            fit: BoxFit.cover,
+                                            onError: (_, __) {},
+                                          )
+                                        : null,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  width: 40,
+                                  height: 40,
                                 ),
-                                width: 40,
-                                height: 40,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                  child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(org.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600)),
-                                  Text(org.phoneNumber,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .outline)),
-                                ],
-                              )),
-                            ],
+                                const SizedBox(width: 16),
+                                Expanded(
+                                    child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(org.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w600)),
+                                    Text(org.phoneNumber,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .outline)),
+                                  ],
+                                )),
+                                if (isSelected)
+                                  IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title:
+                                              const Text('Delete Organization'),
+                                          content: const Text(
+                                              'Are you sure you want to delete this organization? This action cannot be undone.'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                ref
+                                                    .read(organizationsProvider
+                                                        .notifier)
+                                                    .deleteOrganization(org);
+                                                Navigator.pop(context);
+                                              },
+                                              child: const Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                    ),
+                                  )
+                              ],
+                            ),
                           ),
                         ),
                       );
