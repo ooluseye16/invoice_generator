@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +8,13 @@ import 'package:invoice_generator/components/widgets/text_field.dart';
 import 'package:invoice_generator/data/models/form_field.dart';
 import 'package:invoice_generator/data/models/goods.dart';
 import 'package:invoice_generator/data/models/organization.dart';
+import 'package:invoice_generator/utils/extensions.dart';
 import 'package:invoice_generator/utils/number_to_word.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 class OrganizationFormScreen extends ConsumerStatefulWidget {
   const OrganizationFormScreen({super.key, required this.organization});
@@ -134,7 +142,7 @@ class _OrganizationFormScreenState
                                     builder: (context) => AddGoods(
                                       onAdd: (goods) {
                                         setState(() {
-                                          goodsLists[field]!.add(goods);
+                                          goodsLists[field]?.add(goods);
                                         });
                                       },
                                     ),
@@ -147,7 +155,7 @@ class _OrganizationFormScreenState
                           const SizedBox(height: 8),
                           ListView.builder(
                             shrinkWrap: true,
-                            itemCount: goodsLists[field]!.length,
+                            itemCount: goodsLists[field]?.length ?? 0,
                             itemBuilder: (context, index) {
                               return GoodsCard(
                                 goods: goodsLists[field]![index],
@@ -159,7 +167,7 @@ class _OrganizationFormScreenState
                               );
                             },
                           ),
-                          if (goodsLists[field]!.isNotEmpty) ...[
+                          if (goodsLists[field]?.isNotEmpty ?? false) ...[
                             const SizedBox(height: 8),
                             Align(
                               alignment: Alignment.centerRight,
@@ -246,7 +254,7 @@ class _OrganizationFormScreenState
           ),
           const SizedBox(height: 16),
           DefaultButton(
-            onTap: () {
+            onTap: () async {
               // Create a map of all form data
               final formData = {
                 'fields': fieldValues.map(
@@ -274,11 +282,251 @@ class _OrganizationFormScreenState
                 ),
               };
 
-              
+              // Create PDF document
+              final pdf = await _generatePdf(formData);
+
+              // Show preview dialog
+              if (context.mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => PdfPreviewSheet(pdf: pdf),
+                );
+              }
             },
             text: "Generate Invoice",
           ),
         ],
+      ),
+    );
+  }
+
+// Move PDF generation to a separate method
+  Future<pw.Document> _generatePdf(Map<String, dynamic> formData) async {
+    final pdf = pw.Document();
+
+    // Load a font that supports more characters (optional)
+    final font = await PdfGoogleFonts.nunitoRegular();
+    final boldFont = await PdfGoogleFonts.nunitoBold();
+
+    pdf.addPage(
+      pw.Page(
+        theme: pw.ThemeData.withFont(
+          base: font,
+          bold: boldFont,
+        ),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisSize: pw.MainAxisSize.min,
+          children: [
+            // Organization Logo
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Container(
+                  height: 60,
+                  width: 60,
+                  decoration: const pw.BoxDecoration(
+                    shape: pw.BoxShape.circle,
+                    color: PdfColors.purple,
+                  ),
+                  child: pw.Image(
+                    pw.MemoryImage(
+                      File(widget.organization.logoPath!).readAsBytesSync(),
+                    ),
+                    fit: pw.BoxFit.cover,
+                  ),
+                ),
+                pw.SizedBox(width: 20),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('${widget.organization.name} INVOICE'.toUpperCase(),
+                        style: pw.TextStyle(
+                            fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(
+                      widget.organization.phoneNumber.formatPhoneNumber(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            // Organization Details
+            ...fieldValues.entries.map((entry) => pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      '${entry.key.name}:',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    pw.Text(entry.value.toString().toUpperCase()),
+                    pw.SizedBox(height: 10),
+                  ],
+                )),
+
+            pw.SizedBox(height: 20),
+
+            // Goods List
+            ...goodsLists.entries.map((entry) => pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(entry.key.name,
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 10),
+                    pw.Table(
+                      border: pw.TableBorder.all(),
+                      children: [
+                        // Header
+                        pw.TableRow(
+                          children: [
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(5),
+                                child: pw.Text('Description')),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(5),
+                                child: pw.Text('Quantity')),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(5),
+                                child: pw.Text('Price')),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(5),
+                                child: pw.Text('Total')),
+                          ],
+                        ),
+                        // Data rows
+                        ...entry.value.map((goods) => pw.TableRow(
+                              children: [
+                                pw.Padding(
+                                    padding: const pw.EdgeInsets.all(5),
+                                    child: pw.Text(goods.description)),
+                                pw.Padding(
+                                    padding: const pw.EdgeInsets.all(5),
+                                    child: pw.Text('${goods.quantity}')),
+                                pw.Padding(
+                                    padding: const pw.EdgeInsets.all(5),
+                                    child: pw.Text('₦${goods.price}')),
+                                pw.Padding(
+                                    padding: const pw.EdgeInsets.all(5),
+                                    child: pw.Text(
+                                        '₦${goods.price * goods.quantity}')),
+                              ],
+                            )),
+                      ],
+                    ),
+                  ],
+                )),
+
+            pw.SizedBox(height: 20),
+
+            pw.RichText(
+              text: pw.TextSpan(
+                children: [
+                  const pw.TextSpan(
+                    text: 'Amount in Words: ',
+                  ),
+                  pw.TextSpan(
+                    text: amountInWords,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+
+            //add signature
+            pw.SizedBox(height: 60),
+            pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('Customer Signature'),
+                        pw.SizedBox(height: 40),
+                        pw.Container(
+                          width: 200,
+                          decoration: const pw.BoxDecoration(
+                              border: pw.Border(top: pw.BorderSide(width: 1))),
+                        )
+                      ]),
+                  pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('Company Signature'),
+                        pw.SizedBox(height: 40),
+                        pw.Container(
+                          width: 200,
+                          decoration: const pw.BoxDecoration(
+                              border: pw.Border(top: pw.BorderSide(width: 1))),
+                        )
+                      ])
+                ])
+          ],
+        ),
+      ),
+    );
+
+    return pdf;
+  }
+}
+
+class PdfPreviewSheet extends StatelessWidget {
+  const PdfPreviewSheet({
+    super.key,
+    required this.pdf,
+  });
+
+  final pw.Document pdf;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.8,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              Expanded(
+                child: Center(
+                  child: PdfPreview(
+                    build: (format) => pdf.save(),
+                    initialPageFormat: PdfPageFormat.a4,
+                    pdfFileName: "invoice.pdf",
+                    canChangePageFormat: false,
+                    canChangeOrientation: false,
+                    allowPrinting: false,
+                    allowSharing: false,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              DefaultButton(
+                onTap: () async {
+                  // Save PDF
+                  final output = await getTemporaryDirectory();
+                  final file = File('${output.path}/invoice.pdf');
+                  await file.writeAsBytes(await pdf.save());
+
+                  if (context.mounted) {
+                    Navigator.pop(context); // Close preview
+                    Share.shareXFiles(
+                      [
+                        XFile(file.path, name: 'invoice.pdf'),
+                      ],
+                    );
+                  }
+                },
+                text: 'Share',
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -391,8 +639,13 @@ class _AddGoodsState extends State<AddGoods> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        16.0,
+        16.0,
+        16.0,
+        16.0 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

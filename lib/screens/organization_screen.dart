@@ -72,10 +72,13 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
-                                image: DecorationImage(
-                                  image: FileImage(File(org.logoPath!)),
-                                  fit: BoxFit.cover,
-                                ),
+                                image: org.logoPath != null
+                                    ?  DecorationImage(
+                                        image: FileImage(File(org.logoPath!)),
+                                          fit: BoxFit.cover,
+                                        )
+                                    : null,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                               width: 40,
                               height: 40,
@@ -152,11 +155,14 @@ class AppDrawer extends ConsumerWidget {
                               Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(4),
-                                  image: DecorationImage(
-                                    image: FileImage(File(org.logoPath!)),
-                                    fit: BoxFit.cover,
-                                    onError: (_, __) {},
-                                  ),
+                                  image: org.logoPath != null
+                                      ? DecorationImage(
+                                          image: FileImage(File(org.logoPath!)),
+                                          fit: BoxFit.cover,
+                                          onError: (_, __) {},
+                                        )
+                                      : null,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 width: 40,
                                 height: 40,
