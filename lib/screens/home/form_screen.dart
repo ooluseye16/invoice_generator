@@ -32,18 +32,31 @@ class _OrganizationFormScreenState
   String amountInWords = '';
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    //run once
-    if (goodsLists.isEmpty && fieldValues.isEmpty) {
-      for (var field in widget.organization.fields) {
-        if (field.type == FormFieldType.listOfGoods) {
-          goodsLists[field] = [];
-        } else {
-          fieldValues[field] = '';
-        }
+  void initState() {
+    super.initState();
+    _onArgumentChanged();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrganizationFormScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if the argument has changed
+    if (oldWidget.organization.id != widget.organization.id) {
+      _onArgumentChanged();
+    }
+  }
+
+  void _onArgumentChanged() {
+    //  if (goodsLists.isEmpty && fieldValues.isEmpty) {
+    for (var field in widget.organization.fields) {
+      if (field.type == FormFieldType.listOfGoods) {
+        goodsLists[field] = [];
+      } else {
+        fieldValues[field] = '';
       }
     }
+    //  }
   }
 
   bool isFormValid = false;
