@@ -25,3 +25,11 @@ A Flutter application for generating professional invoices. This app allows orga
 - **Local Storage**: All organization and template data is stored locally
 
 - **Easy to Use**: Simple and intuitive interface for creating forms and generating invoices
+
+## Check it out
+
+### Video Demo
+Watch a demo of the app in action: [Video](https://drive.google.com/open?id=1-Rh4gKvYLNQTKRc3Jxa24gTY71CKXK-U&usp=drive_fs)
+
+### Download
+Get the app here: [Invoice Generator](https://drive.google.com/open?id=1-K0pcSBQPruhCABz66KBLkOZ36US-oMp&usp=drive_fs)
