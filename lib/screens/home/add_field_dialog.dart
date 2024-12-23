@@ -55,7 +55,7 @@ class _AddFieldDialogState extends State<AddFieldDialog> {
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _nameController,
-                label: 'Field Name',
+                hintText: 'Field Name',
               ),
               const SizedBox(height: 16),
               Text(

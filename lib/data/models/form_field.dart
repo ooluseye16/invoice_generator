@@ -18,6 +18,11 @@ class InvoiceFormField {
     required this.type,
     this.isRequired = false,
   });
+
+  @override
+  String toString() {
+    return 'InvoiceFormField(name: $name, type: $type, isRequired: $isRequired)';
+  }
 }
 
 @HiveType(typeId: 2)

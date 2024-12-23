@@ -6,6 +6,7 @@ import 'package:invoice_generator/providers/organization_provider.dart';
 import 'package:invoice_generator/providers/preferences_provider.dart';
 import 'package:invoice_generator/screens/home/create_organization.dart';
 import 'package:invoice_generator/screens/home/form_screen.dart';
+import 'package:invoice_generator/screens/home/generated_invoices.dart';
 
 class OrganizationScreen extends ConsumerStatefulWidget {
   static const routeName = '/organization';
@@ -149,9 +150,7 @@ class AppDrawer extends ConsumerWidget {
                           ref
                               .read(currentOrganizationIdProvider.notifier)
                               .setCurrentOrganization(org.id);
-                          ref
-                              .read(currentOrganizationIdProvider.notifier)
-                              .clear();
+
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -208,40 +207,47 @@ class AppDrawer extends ConsumerWidget {
                                   ],
                                 )),
                                 if (isSelected)
-                                  IconButton(
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title:
-                                              const Text('Delete Organization'),
-                                          content: const Text(
-                                              'Are you sure you want to delete this organization? This action cannot be undone.'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context),
-                                              child: const Text('Cancel'),
+                                  PopupMenuButton(
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text(
+                                                  'Delete Organization'),
+                                              content: const Text(
+                                                  'Are you sure you want to delete this organization? This action cannot be undone.'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    ref
+                                                        .read(
+                                                            organizationsProvider
+                                                                .notifier)
+                                                        .deleteOrganization(
+                                                            org);
+                                                    ref
+                                                        .read(
+                                                            currentOrganizationIdProvider
+                                                                .notifier)
+                                                        .clear();
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text('Delete'),
+                                                ),
+                                              ],
                                             ),
-                                            TextButton(
-                                              onPressed: () {
-                                                ref
-                                                    .read(organizationsProvider
-                                                        .notifier)
-                                                    .deleteOrganization(org);
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('Delete'),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                    ),
+                                          );
+                                        },
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
                                   )
                               ],
                             ),
@@ -259,6 +265,15 @@ class AppDrawer extends ConsumerWidget {
                         context, CreateOrganizationScreen.routeName);
                   },
                   child: const Text('Create New Organization'),
+                ),
+                // const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                        context, GeneratedInvoicesScreen.routeName);
+                  },
+                  child: const Text('Show Generated Invoices'),
                 ),
               ],
             ),

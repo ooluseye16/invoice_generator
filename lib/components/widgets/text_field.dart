@@ -6,13 +6,13 @@ class CustomTextField extends StatefulWidget {
   const CustomTextField({
     super.key,
     this.controller,
-    required this.label,
+    required this.hintText,
     this.onChanged,
     this.readOnly = false,
   });
 
   final TextEditingController? controller;
-  final String label;
+  final String hintText;
   final Function(String)? onChanged;
   final bool readOnly;
   @override
@@ -24,10 +24,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
   Widget build(BuildContext context) {
     return TextField(
       controller: widget.controller,
+      keyboardType: TextInputType.text,
+      onTapOutside: (event) {
+        FocusScope.of(context).unfocus();
+      },
       onChanged: widget.onChanged,
       readOnly: widget.readOnly,
       decoration: InputDecoration(
-        hintText: widget.label,
+        hintText: widget.hintText,
         hintStyle:
             Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
         border: InputBorder.none,
@@ -57,10 +61,18 @@ class PhoneNumberTextField extends StatefulWidget {
 }
 
 class _PhoneNumberTextFieldState extends State<PhoneNumberTextField> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? TextEditingController();
+  }
+
   @override
   Widget build(BuildContext context) {
     return TextField(
-      controller: widget.controller,
+      controller: _controller,
       keyboardType: TextInputType.phone,
       onChanged: widget.onChanged,
       inputFormatters: [
@@ -140,7 +152,8 @@ class _NumberTextFieldState extends State<NumberTextField> {
 }
 
 class DateTextField extends StatefulWidget {
-  const DateTextField({super.key, this.controller, required this.hintText, this.onChanged});
+  const DateTextField(
+      {super.key, this.controller, required this.hintText, this.onChanged});
   final TextEditingController? controller;
   final String hintText;
   final Function(String)? onChanged;
@@ -208,7 +221,8 @@ class _DateTextFieldState extends State<DateTextField> {
 }
 
 class EmailTextField extends StatefulWidget {
-  const EmailTextField({super.key, this.controller, required this.hintText, this.onChanged});
+  const EmailTextField(
+      {super.key, this.controller, required this.hintText, this.onChanged});
   final TextEditingController? controller;
   final String hintText;
   final Function(String)? onChanged;

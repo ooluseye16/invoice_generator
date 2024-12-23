@@ -46,4 +46,11 @@ class OrganizationsNotifier
       state = AsyncValue.error(e, stack);
     }
   }
+
+  // Future<Organization> getOrganization(String id) async {
+  //   final box = await Hive.openBox<Organization>('organizations');
+  //   final organization =
+  //       box.values.toList().where((element) => element.id == id).first;
+  //   return organization;
+  // }
 }

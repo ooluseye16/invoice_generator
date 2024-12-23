@@ -16,4 +16,12 @@ class Goods {
       'price': price,
     };
   }
+
+  static Goods fromJson(Map<String, dynamic> json) {
+    return Goods(
+      description: json['description'],
+      quantity: json['quantity'],
+      price: json['price'],
+    );
+  }
 }

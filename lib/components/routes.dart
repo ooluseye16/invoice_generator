@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoice_generator/screens/home/create_organization.dart';
+import 'package:invoice_generator/screens/home/generated_invoices.dart';
 import 'package:invoice_generator/screens/organization_screen.dart';
 import 'package:invoice_generator/screens/splash_screen.dart';
 
@@ -14,6 +15,9 @@ class RouteGenerator {
       case CreateOrganizationScreen.routeName:
         return MaterialPageRoute(
             builder: (context) => const CreateOrganizationScreen());
+      case GeneratedInvoicesScreen.routeName:
+        return MaterialPageRoute(
+            builder: (context) => const GeneratedInvoicesScreen());
       default:
         return MaterialPageRoute(
             builder: (context) => const Scaffold(

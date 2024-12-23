@@ -121,7 +121,7 @@ class _CreateOrganizationScreenState
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: _organizationNameController,
-                        label: 'Enter organization name',
+                        hintText: 'Enter organization name',
                       ),
                       const SizedBox(height: 16),
                       Text('Organization Phone Number',

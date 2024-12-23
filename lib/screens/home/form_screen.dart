@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,13 +8,9 @@ import 'package:invoice_generator/components/widgets/text_field.dart';
 import 'package:invoice_generator/data/models/form_field.dart';
 import 'package:invoice_generator/data/models/goods.dart';
 import 'package:invoice_generator/data/models/organization.dart';
-import 'package:invoice_generator/utils/extensions.dart';
+import 'package:invoice_generator/screens/home/widgets/preview_sheet.dart';
 import 'package:invoice_generator/utils/number_to_word.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:invoice_generator/utils/utilities.dart';
 
 class OrganizationFormScreen extends ConsumerStatefulWidget {
   const OrganizationFormScreen({super.key, required this.organization});
@@ -28,8 +24,8 @@ class OrganizationFormScreen extends ConsumerStatefulWidget {
 class _OrganizationFormScreenState
     extends ConsumerState<OrganizationFormScreen> {
   final Map<InvoiceFormField, List<Goods>> goodsLists = {};
-  final Map<InvoiceFormField, dynamic> fieldValues = {};
-  String amountInWords = '';
+  final Map<InvoiceFormField, TextEditingController> fieldValues = {};
+  final Map<InvoiceFormField, String?> amountInWords = {};
 
   @override
   void initState() {
@@ -43,32 +39,47 @@ class _OrganizationFormScreenState
 
     // Check if the argument has changed
     if (oldWidget.organization.id != widget.organization.id) {
+      log('argument changed');
       _onArgumentChanged();
     }
   }
 
   void _onArgumentChanged() {
-    //  if (goodsLists.isEmpty && fieldValues.isEmpty) {
+    fieldValues.clear();
+    amountInWords.clear();
+    goodsLists.clear();
+
     for (var field in widget.organization.fields) {
       if (field.type == FormFieldType.listOfGoods) {
         goodsLists[field] = [];
+      } else if (field.type == FormFieldType.price) {
+        amountInWords[field] = '';
+        fieldValues[field] = TextEditingController();
+        fieldValues[field]?.addListener(() {
+          checkFormValidity();
+        });
       } else {
-        fieldValues[field] = '';
+        fieldValues[field] = TextEditingController();
+        fieldValues[field]?.addListener(() {
+          checkFormValidity();
+        });
       }
     }
-    //  }
+
+    setState(() {});
   }
 
   bool isFormValid = false;
 
   void checkFormValidity() {
     isFormValid =
-        widget.organization.fields.every((field) => fieldValues[field] != '');
+        fieldValues.entries.every((element) => element.value.text.isNotEmpty);
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    // log("fieldValues: $fieldValues");
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -100,14 +111,16 @@ class _OrganizationFormScreenState
                           Text(field.name),
                           const SizedBox(height: 8),
                           CustomTextField(
-                            label: field.name,
-                            onChanged: (value) {
-                              setState(() {
-                                fieldValues[field] = value;
-                              });
-                              checkFormValidity();
-                            },
-                            //   controller: TextEditingController(text: fieldValues[field]),
+                            hintText: field.name,
+                            controller: fieldValues[field],
+                            //  // initialValue: fieldValues[field],
+                            //   onChanged: (value) {
+                            //     setState(() {
+                            //       fieldValues[field] = value;
+                            //     });
+                            //  log("fieldValues: ${fieldValues[field]}");
+                            //   checkFormValidity();
+                            // },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -121,13 +134,14 @@ class _OrganizationFormScreenState
                           const SizedBox(height: 8),
                           NumberTextField(
                             hintText: field.name,
-                            // controller: TextEditingController(text: fieldValues[field]),
-                            onChanged: (value) {
-                              setState(() {
-                                fieldValues[field] = value;
-                              });
-                              checkFormValidity();
-                            },
+                            controller: fieldValues[field],
+                            //  initialValue: fieldValues[field],
+                            //   onChanged: (value) {
+                            //     setState(() {
+                            //     fieldValues[field] = value;
+                            //   });
+                            //   checkFormValidity();
+                            // },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -140,14 +154,14 @@ class _OrganizationFormScreenState
                           Text(field.name),
                           const SizedBox(height: 8),
                           PhoneNumberTextField(
-                            //  controller:
-                            //     TextEditingController(text: fieldValues[field]),
-                            onChanged: (value) {
-                              setState(() {
-                                fieldValues[field] = "+234$value";
-                              });
-                              checkFormValidity();
-                            },
+                            controller: fieldValues[field],
+                            //  initialValue: fieldValues[field],
+                            //   onChanged: (value) {
+                            //   setState(() {
+                            //     fieldValues[field] = "+234$value";
+                            //   });
+                            //   checkFormValidity();
+                            // },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -218,12 +232,14 @@ class _OrganizationFormScreenState
                           const SizedBox(height: 8),
                           DateTextField(
                             hintText: field.name,
-                            onChanged: (value) {
-                              setState(() {
-                                fieldValues[field] = value;
-                              });
-                              checkFormValidity();
-                            },
+                            controller: fieldValues[field],
+                            //  initialValue: fieldValues[field],
+                            //   onChanged: (value) {
+                            //   setState(() {
+                            //     fieldValues[field] = value;
+                            //   });
+                            //   checkFormValidity();
+                            // },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -237,12 +253,13 @@ class _OrganizationFormScreenState
                           const SizedBox(height: 8),
                           EmailTextField(
                             hintText: field.name,
-                            onChanged: (value) {
-                              setState(() {
-                                fieldValues[field] = value;
-                              });
-                              checkFormValidity();
-                            },
+                            controller: fieldValues[field],
+                            // onChanged: (value) {
+                            //   setState(() {
+                            //     fieldValues[field] = value;
+                            //   });
+                            //   checkFormValidity();
+                            // },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -256,21 +273,23 @@ class _OrganizationFormScreenState
                           const SizedBox(height: 8),
                           PriceTextField(
                             hintText: field.name,
-                            // controller: TextEditingController(text: fieldValues[field]),
+                            controller: fieldValues[field],
+                            //  initialValue: fieldValues[field],
                             onChanged: (value) {
                               setState(() {
-                                fieldValues[field] = value;
+                                //fieldValues[field] = value;
                                 final amount = double.tryParse(value) ?? 0;
-                                amountInWords = NumberToWord().convert(amount);
+                                amountInWords[field] =
+                                    NumberToWord().convert(amount);
                               });
-                              checkFormValidity();
+                              // checkFormValidity();
                             },
                           ),
                           const SizedBox(height: 8),
                           CustomTextField(
-                            label: 'Amount in words',
-                            controller:
-                                TextEditingController(text: amountInWords),
+                            hintText: 'Amount in words',
+                            controller: TextEditingController(
+                                text: amountInWords[field] ?? ''),
                             readOnly: true,
                           ),
                           const SizedBox(height: 16),
@@ -289,22 +308,23 @@ class _OrganizationFormScreenState
             isActive: isFormValid,
             onTap: () async {
               if (!isFormValid) return;
-              // Create a map of all form data
+              // Create form data map
               final formData = {
-                'fields': fieldValues.map(
-                  (field, value) => MapEntry(field.name, value),
-                ),
+                'fields': fieldValues.map((field, value) {
+                  if (field.type == FormFieldType.price) {
+                    return MapEntry(field.name, {
+                      'amount': value.text.replaceAll(',', ''),
+                      'amountInWords': amountInWords[field]
+                    });
+                  }
+                  return MapEntry(field.name, value.text);
+                }),
                 'goods': goodsLists.map(
                   (field, list) => MapEntry(
                     field.name,
-                    list
-                        .map(
-                          (g) => g.toJson(),
-                        )
-                        .toList(),
+                    list.map((g) => g.toJson()).toList(),
                   ),
                 ),
-                'amountInWords': amountInWords,
                 'total_price_goods': goodsLists.values.fold(
                   0.0,
                   (sum, list) =>
@@ -316,307 +336,26 @@ class _OrganizationFormScreenState
                 ),
               };
 
-              // Create PDF document
-              final pdf = await _generatePdf(formData);
+              // Generate PDF
+              final pdf =
+                  await Utilities.generatePdf(formData, widget.organization);
 
-              // Show preview dialog
+              // Show preview
               if (context.mounted) {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
-                  builder: (context) => PdfPreviewSheet(pdf: pdf),
+                  builder: (context) => PdfPreviewSheet(
+                    pdf: pdf,
+                    organizationId: widget.organization.id,
+                    formData: formData,
+                  ),
                 );
               }
             },
             text: "Generate Invoice",
           ),
         ],
-      ),
-    );
-  }
-
-// Move PDF generation to a separate method
-  Future<pw.Document> _generatePdf(Map<String, dynamic> formData) async {
-    final pdf = pw.Document();
-
-    // Load a font that supports more characters (optional)
-    final font = await PdfGoogleFonts.nunitoRegular();
-    final boldFont = await PdfGoogleFonts.nunitoBold();
-
-    final fields = Map<String, dynamic>.from(formData['fields'])
-        .entries
-        .where((e) => !e.key.toLowerCase().contains('total amount paid'))
-        .toList();
-
-    final totalAmount = formData['fields']['Total Amount Paid'];
-
-    pdf.addPage(
-      pw.Page(
-        theme: pw.ThemeData.withFont(
-          base: font,
-          bold: boldFont,
-        ),
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            // Organization Logo
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Container(
-                  height: 60,
-                  width: 60,
-                  decoration: const pw.BoxDecoration(
-                    shape: pw.BoxShape.circle,
-                    color: PdfColors.purple,
-                  ),
-                  child: pw.Image(
-                    pw.MemoryImage(
-                      File(widget.organization.logoPath!).readAsBytesSync(),
-                    ),
-                    fit: pw.BoxFit.cover,
-                  ),
-                ),
-                pw.SizedBox(width: 20),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('${widget.organization.name} INVOICE'.toUpperCase(),
-                        style: pw.TextStyle(
-                            fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                    pw.Text(
-                      widget.organization.phoneNumber.formatPhoneNumber(),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-            // Organization Details
-            pw.Wrap(
-              alignment: pw.WrapAlignment.spaceBetween,
-              spacing: 30,
-              runSpacing: 20,
-              children: List.generate(
-                (fields.length / 2).ceil(),
-                (index) {
-                  final start = index * 2;
-                  final entries = fields.toList();
-                  return pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                            '${entries[start].key}:',
-                            style: pw.TextStyle(
-                              fontWeight: pw.FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          pw.Text(
-                              entries[start].value.toString().toUpperCase()),
-                          pw.SizedBox(height: 10),
-                        ],
-                      ),
-                      if (start + 1 < entries.length)
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.end,
-                          children: [
-                            pw.Text(
-                              '${entries[start + 1].key}:',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            pw.Text(entries[start + 1]
-                                .value
-                                .toString()
-                                .toUpperCase()),
-                            pw.SizedBox(height: 10),
-                          ],
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            pw.RichText(
-              text: pw.TextSpan(
-                children: [
-                  const pw.TextSpan(
-                    text: 'Total Amount Paid: ',
-                  ),
-                  pw.TextSpan(
-                    text:
-                        NumberFormat('#,###').format(double.parse(totalAmount)),
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 4),
-            pw.RichText(
-              text: pw.TextSpan(
-                children: [
-                  const pw.TextSpan(
-                    text: 'Amount in Words: ',
-                  ),
-                  pw.TextSpan(
-                    text: amountInWords,
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 20),
-
-            // Goods List
-            ...goodsLists.entries.map((entry) => pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(entry.key.name,
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.SizedBox(height: 10),
-                    pw.Table(
-                      border: pw.TableBorder.all(),
-                      children: [
-                        // Header
-                        pw.TableRow(
-                          children: [
-                            pw.Padding(
-                                padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text('Description')),
-                            pw.Padding(
-                                padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text('Quantity')),
-                            pw.Padding(
-                                padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text('Price')),
-                            pw.Padding(
-                                padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text('Total')),
-                          ],
-                        ),
-                        // Data rows
-                        ...entry.value.map((goods) => pw.TableRow(
-                              children: [
-                                pw.Padding(
-                                    padding: const pw.EdgeInsets.all(5),
-                                    child: pw.Text(goods.description)),
-                                pw.Padding(
-                                    padding: const pw.EdgeInsets.all(5),
-                                    child: pw.Text('${goods.quantity}')),
-                                pw.Padding(
-                                    padding: const pw.EdgeInsets.all(5),
-                                    child: pw.Text('₦${goods.price}')),
-                                pw.Padding(
-                                    padding: const pw.EdgeInsets.all(5),
-                                    child: pw.Text(
-                                        '₦${goods.price * goods.quantity}')),
-                              ],
-                            )),
-                      ],
-                    ),
-                  ],
-                )),
-
-            //add signature
-            pw.SizedBox(height: 60),
-            pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text('Customer Signature'),
-                        pw.SizedBox(height: 40),
-                        pw.Container(
-                          width: 200,
-                          decoration: const pw.BoxDecoration(
-                              border: pw.Border(top: pw.BorderSide(width: 1))),
-                        )
-                      ]),
-                  pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text('Company Signature'),
-                        pw.SizedBox(height: 40),
-                        pw.Container(
-                          width: 200,
-                          decoration: const pw.BoxDecoration(
-                              border: pw.Border(top: pw.BorderSide(width: 1))),
-                        )
-                      ])
-                ])
-          ],
-        ),
-      ),
-    );
-
-    return pdf;
-  }
-}
-
-class PdfPreviewSheet extends StatelessWidget {
-  const PdfPreviewSheet({
-    super.key,
-    required this.pdf,
-  });
-
-  final pw.Document pdf;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.8,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Expanded(
-                child: Center(
-                  child: PdfPreview(
-                    build: (format) => pdf.save(),
-                    initialPageFormat: PdfPageFormat.a4,
-                    pdfFileName: "invoice.pdf",
-                    canChangePageFormat: false,
-                    canChangeOrientation: false,
-                    allowPrinting: false,
-                    allowSharing: false,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              DefaultButton(
-                onTap: () async {
-                  // Save PDF
-                  final output = await getTemporaryDirectory();
-                  final file = File('${output.path}/invoice.pdf');
-                  await file.writeAsBytes(await pdf.save());
-
-                  if (context.mounted) {
-                    Navigator.pop(context); // Close preview
-                    Share.shareXFiles(
-                      [
-                        XFile(file.path, name: 'invoice.pdf'),
-                      ],
-                    );
-                  }
-                },
-                text: 'Share',
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -758,7 +497,7 @@ class _AddGoodsState extends State<AddGoods> {
           const SizedBox(height: 8),
           CustomTextField(
             controller: descriptionController,
-            label: 'Description',
+            hintText: 'Description',
           ),
           const SizedBox(height: 16),
           Text("Quantity",
